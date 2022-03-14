@@ -1,97 +1,176 @@
-import string
 from urllib.request import Request
 from urllib.request import urlopen
 from lxml import etree
-import re
-# Get beautifulsoup4 with: pip install beautifulsoup4
 import bs4
+import json
 
-arn_json_output = {}
+# arn_json_output = {}
 protocol = "http://"
 url = "bgp.he.net"
 path = "/report/world"
-xpath_id = "//tbody/tr[1]/td[1]"
-xpath_name = "//tbody/tr[1]/td[2]"
-xpath_v4_routes = "//tbody/tr[1]/td[4]"
-xpath_v6_routes = "//tbody/tr[1]/td[6]"
 
 
-# To help get you started, here is a function to fetch and parse a page.
-# Given url, return soup.
-def url_to_soup(url):
-    # bgp.he.net filters based on user-agent.
-    req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    html = urlopen(req).read()
-    soup = bs4.BeautifulSoup(html, features="html.parser")
+def url_to_soup(_url):
+    req = ""
+    html = ""
+    soup = ""
+
+    try:
+        req = Request(_url, headers={'User-Agent': 'Mozilla/5.0'})
+        html = urlopen(req).read()
+        soup = bs4.BeautifulSoup(html, features="html.parser")
+    except TypeError:
+        return "null"
+
     return soup
+
+
+def get_country_name(soup):
+    _country_name = ""
+    try:
+        dom = etree.HTML(str(soup))
+        _country_name = dom.xpath("//*[@id='header']/h1/a")[0].text
+    except TypeError:
+        _country_name = "TypeError"
+    finally:
+        return _country_name
 
 
 def get_countries_as_array(soup):
     links = []
     for a in soup.findAll('a', href=True):
-        thislink = a.attrs['href']
-        if thislink.startswith('/country'):
-            links.append(thislink)
-
+        try:
+            thislink = a.attrs['href']
+            if thislink.startswith('/country'):
+                links.append(thislink)
+        except TypeError:
+            links.append("TypeError")
     return links
 
 
-def get_asn_ids_for_country(country_url, soup):
+def get_arn_names_as_array(soup):
+    x_path = f"//table/tbody/tr/td[2]"
     dom = etree.HTML(str(soup))
-    links = dom.xpath('//*[@id="asns"]/tbody/tr/td/a["href"]')
+    links = dom.xpath(x_path)
+    text_links = []
+    for link in links:
+        text_links.append(link.text)
 
-    return links
+    return text_links
 
 
-def get_arn_name(country_url, soup):
+def get_arn_ids_as_array(soup):
+    text_links = []
+    x_path = f"//*[@id='asns']/tbody/tr/td[1]/a"
     dom = etree.HTML(str(soup))
-    if dom.xpath(xpath_name)[0].text:
-        return dom.xpath(xpath_name)[0].text
-    else:
-        return "none"
+    links = dom.xpath(x_path)
+    for link in links:
+        text_links.append(link.text)
+
+    return text_links
 
 
-def get_arn_id(country_url, soup):
+def get_arn_v4_as_array(soup):
+    text_links = []
+    x_path = f"//table/tbody/tr/td[4]"
     dom = etree.HTML(str(soup))
-    if dom.xpath(xpath_id)[0].text:
-        return dom.xpath(xpath_id)[0].text
-    else:
-        return "none"
+    links = dom.xpath(x_path)
 
-def get_arn_v4_routes(country_url, soup):
-    dom = etree.HTML(str(soup))
-    if dom.xpath(xpath_v4_routes)[0].text:
-        return dom.xpath(xpath_v4_routes)[0].text
-    else:
-        return "none"
+    for link in links:
+        text_links.append(link.text)
 
-def get_arn_v6_routes(country_url, soup):
+    return text_links
+
+
+def get_arn_v6_as_array(soup):
+    text_links = []
+    x_path = f"//table/tbody/tr/td[6]"
     dom = etree.HTML(str(soup))
-    if dom.xpath(xpath_v6_routes)[0].text:
-        return dom.xpath(xpath_v6_routes)[0].text
-    else:
-        return "none"
+    links = dom.xpath(x_path)
+
+    for link in links:
+        text_links.append(link.text)
+
+    return text_links
+
+
+def get_arn_name(x_path, soup):
+    _arn_name = ""
+    try:
+        dom = etree.HTML(str(soup))
+        _arn_name = dom.xpath(x_path)[0].text
+    except TypeError:
+        _arn_name = "TypeError".__str__
+    finally:
+        return _arn_name
+
+
+def get_arn_count(soup):
+    dom = etree.HTML(str(soup))
+    all_elems = dom.xpath("//table/tbody/tr/td[2]")
+    return all_elems
+
+
+def get_arn_id(x_path, country_url, soup):
+    arn_id = ""
+    try:
+        dom = etree.HTML(str(soup))
+        arn_id = dom.xpath(x_path)
+    except TypeError:
+        arn_id = "TypeError"
+    finally:
+        return arn_id
+
+
+def get_arn_v4_routes(x_path, soup):
+    arn_v4_route = ""
+    try:
+        dom = etree.HTML(str(soup))
+        arn_v4_route = dom.xpath(x_path)[0].text
+    except TypeError:
+        arn_v4_route = "TypeError"
+    finally:
+        return arn_v4_route
+
+
+def get_arn_v6_routes(x_path, soup):
+    arn_v6_route = ""
+    try:
+        dom = etree.HTML(str(soup))
+        arn_v6_route = dom.xpath(x_path)[0].text
+    except TypeError:
+        arn_v6_route = "TypeError"
+    finally:
+        return arn_v6_route
 
 
 fullurl = protocol + url + path
 this_soup = url_to_soup(fullurl)
-
-# paths for all countries
-# this_links = []
 this_links = get_countries_as_array(this_soup)
+inc = 1
 
 for i in this_links:
-    print(i)
     fullurl = protocol + url + i
     this_soup = url_to_soup(fullurl)
-    arn_name = get_arn_name(fullurl, this_soup)
-    arn_id = get_arn_id(fullurl, this_soup)
-    arn_route_v4 = get_arn_v4_routes(fullurl, this_soup)
-    arn_route_v6 = get_arn_v6_routes(fullurl, this_soup)
+    country_name = get_country_name(this_soup)
+    xpath_arn_count = get_arn_count(this_soup)
+    arr_arn_names = get_arn_names_as_array(this_soup)
+    arr_arn_ids = get_arn_ids_as_array(this_soup)
+    arr_arn_v4_routes = get_arn_v4_as_array(this_soup)
+    arr_arn_v6_routes = get_arn_v6_as_array(this_soup)
 
-    print(arn_name)
-    print(arn_id)
-    print(arn_route_v4)
-    print(arn_route_v6)
+    for range_ind in range(len(xpath_arn_count)):
+        arn_json_output = {
+            country_name: [
+                {
+                    "id": arr_arn_ids,
+                    "name": arr_arn_names,
+                    "v4_routes": arr_arn_v4_routes,
+                    "v6_routes": arr_arn_v6_routes
+                }
+            ]
+        }
 
-    print("----------------------------------------------------")
+    print(arn_json_output)
+    inc = inc + 1
+
