@@ -11,18 +11,14 @@ path = "/report/world"
 
 
 def url_to_soup(_url):
-    req = ""
-    html = ""
-    soup = ""
-
     try:
         req = Request(_url, headers={'User-Agent': 'Mozilla/5.0'})
         html = urlopen(req).read()
         soup = bs4.BeautifulSoup(html, features="html.parser")
     except TypeError:
-        return "null"
-
-    return soup
+        soup = ""
+    finally:
+        return soup
 
 
 def get_country_name(soup):
@@ -38,60 +34,73 @@ def get_country_name(soup):
 
 def get_countries_as_array(soup):
     links = []
-    for a in soup.findAll('a', href=True):
-        try:
+    try:
+        for a in soup.findAll('a', href=True):
             thislink = a.attrs['href']
             if thislink.startswith('/country'):
                 links.append(thislink)
-        except TypeError:
-            links.append("TypeError")
-    return links
+    except TypeError:
+        links.append("TypeError")
+    finally:
+        return links
 
 
 def get_arn_names_as_array(soup):
-    x_path = f"//table/tbody/tr/td[2]"
-    dom = etree.HTML(str(soup))
-    links = dom.xpath(x_path)
     text_links = []
-    for link in links:
-        text_links.append(link.text)
-
-    return text_links
+    x_path = f"//table/tbody/tr/td[2]"
+    try:
+        dom = etree.HTML(str(soup))
+        links = dom.xpath(x_path)
+        for link in links:
+            text_links.append(link.text)
+    except TypeError:
+        text_links.append("TypeError")
+    finally:
+        return text_links
 
 
 def get_arn_ids_as_array(soup):
     text_links = []
     x_path = f"//*[@id='asns']/tbody/tr/td[1]/a"
-    dom = etree.HTML(str(soup))
-    links = dom.xpath(x_path)
-    for link in links:
-        text_links.append(link.text)
-
-    return text_links
+    try:
+        dom = etree.HTML(str(soup))
+        links = dom.xpath(x_path)
+        for link in links:
+            text_links.append(link.text)
+    except TypeError:
+        text_links.append("TypeError")
+    finally:
+        return text_links
 
 
 def get_arn_v4_as_array(soup):
     text_links = []
     x_path = f"//table/tbody/tr/td[4]"
-    dom = etree.HTML(str(soup))
-    links = dom.xpath(x_path)
+    try:
+        dom = etree.HTML(str(soup))
+        links = dom.xpath(x_path)
 
-    for link in links:
-        text_links.append(link.text)
-
-    return text_links
+        for link in links:
+            text_links.append(link.text)
+    except TypeError:
+        text_links.append("TypeError")
+    finally:
+        return text_links
 
 
 def get_arn_v6_as_array(soup):
     text_links = []
     x_path = f"//table/tbody/tr/td[6]"
-    dom = etree.HTML(str(soup))
-    links = dom.xpath(x_path)
+    try:
+        dom = etree.HTML(str(soup))
+        links = dom.xpath(x_path)
 
-    for link in links:
-        text_links.append(link.text)
-
-    return text_links
+        for link in links:
+            text_links.append(link.text)
+    except TypeError:
+        text_links.append("TypeError")
+    finally:
+        return text_links
 
 
 def get_arn_name(x_path, soup):
@@ -100,15 +109,19 @@ def get_arn_name(x_path, soup):
         dom = etree.HTML(str(soup))
         _arn_name = dom.xpath(x_path)[0].text
     except TypeError:
-        _arn_name = "TypeError".__str__
+        _arn_name = "TypeError"
     finally:
         return _arn_name
 
 
 def get_arn_count(soup):
-    dom = etree.HTML(str(soup))
-    all_elems = dom.xpath("//table/tbody/tr/td[2]")
-    return all_elems
+    try:
+        dom = etree.HTML(str(soup))
+        all_elems = dom.xpath("//table/tbody/tr/td[2]")
+    except TypeError:
+        all_elems = "Null"
+    finally:
+        return all_elems
 
 
 def get_arn_id(x_path, country_url, soup):
@@ -144,33 +157,40 @@ def get_arn_v6_routes(x_path, soup):
         return arn_v6_route
 
 
+def json_validator(data):
+    try:
+        json.loads(data)
+        return True
+    except ValueError as error:
+        print("invalid json: %s" % error)
+        return False
+
+
 fullurl = protocol + url + path
 this_soup = url_to_soup(fullurl)
 this_links = get_countries_as_array(this_soup)
-inc = 1
-
+arn_json_output = ""
 for i in this_links:
     fullurl = protocol + url + i
     this_soup = url_to_soup(fullurl)
-    country_name = get_country_name(this_soup)
+    country_name = get_country_name(this_soup).replace("Networks: ", "")
     xpath_arn_count = get_arn_count(this_soup)
     arr_arn_names = get_arn_names_as_array(this_soup)
     arr_arn_ids = get_arn_ids_as_array(this_soup)
     arr_arn_v4_routes = get_arn_v4_as_array(this_soup)
     arr_arn_v6_routes = get_arn_v6_as_array(this_soup)
 
+    j=0
     for range_ind in range(len(xpath_arn_count)):
         arn_json_output = {
             country_name: [
                 {
-                    "id": arr_arn_ids,
-                    "name": arr_arn_names,
-                    "v4_routes": arr_arn_v4_routes,
-                    "v6_routes": arr_arn_v6_routes
+                    "id": arr_arn_ids[j],
+                    "name": arr_arn_names[j],
+                    "v4_routes": arr_arn_v4_routes[j],
+                    "v6_routes": arr_arn_v6_routes[j]
                 }
             ]
         }
-
-    print(arn_json_output)
-    inc = inc + 1
-
+        j = j + 1
+        print(arn_json_output)
