@@ -3,11 +3,29 @@ from urllib.request import urlopen
 from lxml import etree
 import bs4
 import json
+import logging
 
-# arn_json_output = {}
 protocol = "http://"
 url = "bgp.he.net"
 path = "/report/world"
+
+#def setup_logging():
+# create logger
+logger = logging.getLogger('arn_json_builder')
+logger.setLevel(logging.DEBUG)
+
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# add formatter to ch
+ch.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(ch)
 
 
 def url_to_soup(_url):
@@ -193,4 +211,5 @@ for i in this_links:
             ]
         }
         j = j + 1
-        print(arn_json_output)
+
+        logger.debug(arn_json_output)
