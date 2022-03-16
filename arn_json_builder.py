@@ -137,7 +137,7 @@ def get_arn_count(soup):
         dom = etree.HTML(str(soup))
         all_elems = dom.xpath("//table/tbody/tr/td[2]")
     except TypeError:
-        all_elems = "Null"
+        all_elems = "TypeError"
     finally:
         return all_elems
 
