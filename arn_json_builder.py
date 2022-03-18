@@ -9,7 +9,7 @@ protocol = "http://"
 url = "bgp.he.net"
 path = "/report/world"
 
-#def setup_logging():
+# def setup_logging():
 # create logger
 logger = logging.getLogger('arn_json_builder')
 logger.setLevel(logging.DEBUG)
@@ -184,32 +184,36 @@ def json_validator(data):
         return False
 
 
-fullurl = protocol + url + path
-this_soup = url_to_soup(fullurl)
-this_links = get_countries_as_array(this_soup)
-arn_json_output = ""
-for i in this_links:
-    fullurl = protocol + url + i
+def main():
+    fullurl = protocol + url + path
     this_soup = url_to_soup(fullurl)
-    country_name = get_country_name(this_soup).replace("Networks: ", "")
-    xpath_arn_count = get_arn_count(this_soup)
-    arr_arn_names = get_arn_names_as_array(this_soup)
-    arr_arn_ids = get_arn_ids_as_array(this_soup)
-    arr_arn_v4_routes = get_arn_v4_as_array(this_soup)
-    arr_arn_v6_routes = get_arn_v6_as_array(this_soup)
+    this_links = get_countries_as_array(this_soup)
+    arn_json_output = []
+    arn_json_output_updated = []
+    for i in this_links:
+        fullurl = protocol + url + i
+        this_soup = url_to_soup(fullurl)
+        country_name = get_country_name(this_soup).replace("Networks: ", "")
+        xpath_arn_count = get_arn_count(this_soup)
+        arr_arn_names = get_arn_names_as_array(this_soup)
+        arr_arn_ids = get_arn_ids_as_array(this_soup)
+        arr_arn_v4_routes = get_arn_v4_as_array(this_soup)
+        arr_arn_v6_routes = get_arn_v6_as_array(this_soup)
 
-    j=0
-    for range_ind in range(len(xpath_arn_count)):
-        arn_json_output = {
-            country_name: [
-                {
-                    "id": arr_arn_ids[j],
-                    "name": arr_arn_names[j],
-                    "v4_routes": arr_arn_v4_routes[j],
-                    "v6_routes": arr_arn_v6_routes[j]
-                }
-            ]
-        }
-        j = j + 1
+        j = 0
+        for range_ind in range(len(xpath_arn_count)):
+            arn_json_output =  {country_name:[
+                {"id": arr_arn_ids[j],
+                "name": arr_arn_names[j],
+                "v4_routes": arr_arn_v4_routes[j],
+                "v6_routes": arr_arn_v6_routes[j]}
+            ]}
+            arn_json_output_updated.append(arn_json_output)
+            j = j + 1
+            print(arn_json_output)
+    return arn_json_output_updated
 
-        logger.debug(arn_json_output)
+
+if __name__ == "__main__":
+    arn = main()
+    print(arn)
